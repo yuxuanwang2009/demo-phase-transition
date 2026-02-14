@@ -220,7 +220,9 @@ fig.update_layout(
     template='plotly_white'
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True, config={
+    'modeBarButtonsToRemove': ['autoScale2d', 'resetScale2d', 'zoom2d', 'pan2d', 'zoomIn2d', 'zoomOut2d']
+})
 
 # Explanations
 col1, col2 = st.columns(2)
