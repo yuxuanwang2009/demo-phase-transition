@@ -221,7 +221,9 @@ fig.update_layout(
 )
 
 st.plotly_chart(fig, use_container_width=True, config={
-    'modeBarButtonsToRemove': ['autoScale2d', 'resetScale2d', 'zoom2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'select2d', 'lasso2d']
+    'modeBarButtonsToRemove': ['autoScale2d', 'resetScale2d', 'zoom2d', 'pan2d', 'zoomIn2d', 'zoomOut2d', 'select2d', 'lasso2d'],
+    'scrollZoom': False,
+    'doubleClick': False
 })
 
 # Explanations
