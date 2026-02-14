@@ -4,7 +4,7 @@ Interactive visualization of phase transitions, stability, and free energy lands
 
 ## 🌐 Live Demo
 
-Try the app online: [Streamlit Cloud Link] *(will be added after deployment)*
+Try the app online: [Streamlit Cloud Link](https://demo-phase-transition-vlxs9wmgphzajttn45bcvj.streamlit.app)
 
 ## 📊 Features
 
