@@ -106,8 +106,13 @@ def find_maxwell_pressure(beta):
         integrand = P_int - P_try
         return np.sum(0.5 * (integrand[:-1] + integrand[1:]) * np.diff(v_int))
 
-    # Bisection to find P where equal-area condition holds
-    lo, hi = P_lo_loop + 1e-6, P_hi_loop - 1e-6
+    # Bisection to find P where equal-area condition holds.
+    # The lower bound must be above P(v_max) so that 3 roots exist within [v_min, v_max].
+    P_right_boundary = vdw_pressure(v_max, beta)
+    lo = max(P_lo_loop, P_right_boundary) + 1e-6
+    hi = P_hi_loop - 1e-6
+    if lo >= hi:
+        return None, None, None
     for _ in range(100):
         mid = (lo + hi) / 2.0
         ad = area_diff(mid)
