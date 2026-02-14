@@ -130,7 +130,7 @@ with st.sidebar:
     pressure = st.slider(r"$P$ (pressure)", min_value=P_lo, max_value=P_hi,
                          value=2.3, step=0.05, key='pressure_slider')
 
-
+d
 
 # Compute plot data based on current slider values
 v_plot = np.linspace(v_min, v_max, 600)
@@ -200,7 +200,7 @@ P_max_data = P_data.max()
 
 # Use reasonable bounds: ignore extremely negative or positive values
 P_y_lower = max(P_min_data, -10)  # Don't go too negative
-P_y_upper = min(P_max_data, 30)  # Cap very high values
+P_y_upper = min(P_max_data, 10)  # Cap very high values
 
 # Ensure current pressure is visible
 P_y_lower = min(P_y_lower, pressure * 0.8)
