@@ -218,21 +218,47 @@ for i in range(len(roots)):
                                            line=dict(color='white', width=2)),
                                  showlegend=False), row=1, col=1)
 
-# Isotherm — split into stable (solid) and unstable/metastable (dashed) via Maxwell construction
+# Isotherm — split into stable (solid) and unstable/metastable (dotted) via Maxwell construction
 if P_maxwell is not None:
+    # Create segments with explicit boundary points to ensure connectivity
     mask_left = v_plot <= v_liq
     mask_mid = (v_plot >= v_liq) & (v_plot <= v_gas)
     mask_right = v_plot >= v_gas
+
+    # Left segment: add v_liq at the end if not already present
+    v_left = v_plot[mask_left]
+    P_left = P_data[mask_left]
+    if len(v_left) == 0 or v_left[-1] != v_liq:
+        v_left = np.append(v_left, v_liq)
+        P_left = np.append(P_left, vdw_pressure(v_liq, beta))
+
+    # Middle segment: ensure v_liq at start and v_gas at end
+    v_mid = v_plot[mask_mid]
+    P_mid = P_data[mask_mid]
+    if len(v_mid) == 0 or v_mid[0] != v_liq:
+        v_mid = np.insert(v_mid, 0, v_liq)
+        P_mid = np.insert(P_mid, 0, vdw_pressure(v_liq, beta))
+    if len(v_mid) == 0 or v_mid[-1] != v_gas:
+        v_mid = np.append(v_mid, v_gas)
+        P_mid = np.append(P_mid, vdw_pressure(v_gas, beta))
+
+    # Right segment: add v_gas at the start if not already present
+    v_right = v_plot[mask_right]
+    P_right = P_data[mask_right]
+    if len(v_right) == 0 or v_right[0] != v_gas:
+        v_right = np.insert(v_right, 0, v_gas)
+        P_right = np.insert(P_right, 0, vdw_pressure(v_gas, beta))
+
     # Stable portion (liquid side)
-    fig.add_trace(go.Scatter(x=v_plot[mask_left], y=P_data[mask_left], mode='lines',
+    fig.add_trace(go.Scatter(x=v_left, y=P_left, mode='lines',
                              line=dict(color=C_ISOTHERM, width=2), showlegend=False),
                   row=2, col=1)
     # Unphysical + metastable portion (dotted)
-    fig.add_trace(go.Scatter(x=v_plot[mask_mid], y=P_data[mask_mid], mode='lines',
+    fig.add_trace(go.Scatter(x=v_mid, y=P_mid, mode='lines',
                              line=dict(color=C_ISOTHERM, width=2, dash='dot'), showlegend=False),
                   row=2, col=1)
     # Stable portion (gas side)
-    fig.add_trace(go.Scatter(x=v_plot[mask_right], y=P_data[mask_right], mode='lines',
+    fig.add_trace(go.Scatter(x=v_right, y=P_right, mode='lines',
                              line=dict(color=C_ISOTHERM, width=2), showlegend=False),
                   row=2, col=1)
     # Maxwell construction: horizontal line at equilibrium pressure

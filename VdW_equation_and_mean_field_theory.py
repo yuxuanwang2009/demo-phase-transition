@@ -303,12 +303,38 @@ def update(_=None):
     # Split isotherm via Maxwell construction (depends only on beta)
     P_mw, v_liq, v_gas = find_maxwell_pressure(beta)
     if P_mw is not None:
+        # Create segments with explicit boundary points to ensure connectivity
         mask_left = v_plot <= v_liq
         mask_mid = (v_plot >= v_liq) & (v_plot <= v_gas)
         mask_right = v_plot >= v_gas
-        line_iso_left.set_data(v_plot[mask_left], P_iso[mask_left])
-        line_iso_mid.set_data(v_plot[mask_mid], P_iso[mask_mid])
-        line_iso_right.set_data(v_plot[mask_right], P_iso[mask_right])
+
+        # Left segment: add v_liq at the end if not already present
+        v_left = v_plot[mask_left]
+        P_left = P_iso[mask_left]
+        if len(v_left) == 0 or v_left[-1] != v_liq:
+            v_left = np.append(v_left, v_liq)
+            P_left = np.append(P_left, vdw_pressure(v_liq, beta))
+
+        # Middle segment: ensure v_liq at start and v_gas at end
+        v_mid = v_plot[mask_mid]
+        P_mid = P_iso[mask_mid]
+        if len(v_mid) == 0 or v_mid[0] != v_liq:
+            v_mid = np.insert(v_mid, 0, v_liq)
+            P_mid = np.insert(P_mid, 0, vdw_pressure(v_liq, beta))
+        if len(v_mid) == 0 or v_mid[-1] != v_gas:
+            v_mid = np.append(v_mid, v_gas)
+            P_mid = np.append(P_mid, vdw_pressure(v_gas, beta))
+
+        # Right segment: add v_gas at the start if not already present
+        v_right = v_plot[mask_right]
+        P_right = P_iso[mask_right]
+        if len(v_right) == 0 or v_right[0] != v_gas:
+            v_right = np.insert(v_right, 0, v_gas)
+            P_right = np.insert(P_right, 0, vdw_pressure(v_gas, beta))
+
+        line_iso_left.set_data(v_left, P_left)
+        line_iso_mid.set_data(v_mid, P_mid)
+        line_iso_right.set_data(v_right, P_right)
         line_maxwell.set_data([v_liq, v_gas], [P_mw, P_mw])
     else:
         line_iso_left.set_data(v_plot, P_iso)
