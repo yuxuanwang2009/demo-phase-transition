@@ -322,7 +322,26 @@ fig.update_layout(
     showlegend=True,
     legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5),
     hovermode='closest',
-    template='plotly_white'
+    template='plotly_white',
+    annotations=[
+        # Equation for βG plot
+        dict(
+            x=0.98, y=0.05, xref="x domain", yref="y domain",
+            text=r"$\beta G = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$",
+            showarrow=False, xanchor="right", yanchor="bottom",
+            font=dict(size=10),
+            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4,
+            row=1, col=1
+        ),
+        # Equation for VdW isotherm plot
+        dict(
+            x=0.98, y=0.05, xref="x2 domain", yref="y2 domain",
+            text=r"$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$",
+            showarrow=False, xanchor="right", yanchor="bottom",
+            font=dict(size=10),
+            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4
+        )
+    ]
 )
 
 st.plotly_chart(fig, use_container_width=True, config={
@@ -359,6 +378,29 @@ st.divider()
 
 st.markdown("### 🔬 Key Physics Insights")
 
+with st.expander("📐 The Equations", expanded=False):
+    st.markdown(r"""
+    **Gibbs Free Energy (Mean-Field Theory):**
+    $$\beta G(v) = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$$
+
+    This represents the dimensionless Gibbs free energy per particle in the mean-field approximation:
+    - $\beta p v$: External pressure work term
+    - $-\frac{\beta u}{2v}$: Mean-field attractive interaction energy ($u = \Omega U_0/2$)
+    - $-\ln(v - b)$: Entropy of hard-core particles with excluded volume $b = \Omega/2$
+
+    The system minimizes $G$ at equilibrium. Multiple local minima indicate **phase coexistence**.
+
+    **Van der Waals Equation of State:**
+    $$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$$
+
+    This follows from $P = -(\partial G/\partial v)_T$ and describes the pressure-volume relationship:
+    - $\frac{1}{\beta(v - b)}$: Repulsive term from hard-core excluded volume
+    - $-\frac{a}{v^2}$: Attractive term from long-range interactions ($a = u/2$)
+
+    The non-monotonic behavior (negative $\partial P/\partial v$ region) signals **mechanical instability**
+    and the potential for phase separation.
+    """)
+
 with st.expander("📌 Phase Transition", expanded=True):
     st.markdown(r"""
     At low temperatures (high $\beta$), you'll observe **three intersection points**:
@@ -390,7 +432,7 @@ with st.expander("🌡️ Critical Point"):
     At the **critical point** ($\beta_c = {beta_c:.3f}$, $P_c = {P_c:.3f}$), the distinction
     between liquid and gas vanishes - they become a single **supercritical fluid**.
 
-    Click the "Set to Critical Point" button above to jump to these values! Slide around these values to see fluid smoothly turning into gas.
+    Click the "Set to Critical Point" button above to jump to these values! Slide around these values to see fluid turning into gas via a **second-order phase transition.**.
     """)
 
 # Footer

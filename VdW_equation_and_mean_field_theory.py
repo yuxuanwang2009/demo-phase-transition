@@ -187,6 +187,10 @@ ax1.set_xlabel("v  (volume per particle)", fontsize=11)
 ax1.set_ylabel(r"$\beta\, G(v)$", fontsize=12)
 ax1.set_xlim(v_min, v_max)
 ax1.set_title("Free-energy landscape (log scale)", fontsize=11)
+# Add equation label
+ax1.text(0.98, 0.05, r"$\beta G = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$",
+         transform=ax1.transAxes, fontsize=9, ha="right", va="bottom",
+         bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="lightgray", alpha=0.9))
 text_P_left = ax1.text(0.02, 0.98, f"P = {p_init:.2f}", transform=ax1.transAxes,
                        fontsize=11, fontweight="bold", va="top", ha="left",
                        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.85))
@@ -252,6 +256,10 @@ ax2.set_ylabel("P", fontsize=11)
 ax2.set_xlim(v_min, v_max)
 ax2.set_ylim(P_lo, P_hi)
 ax2.set_title("VdW isotherm  &  isobar", fontsize=11)
+# Add equation label
+ax2.text(0.98, 0.05, r"$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$",
+         transform=ax2.transAxes, fontsize=9, ha="right", va="bottom",
+         bbox=dict(boxstyle="round,pad=0.4", fc="white", ec="lightgray", alpha=0.9))
 # P label positioned near the isobar line
 text_P_right = ax2.text(v_max * 0.95, p_init, f"P = {p_init:.2f}",
                         fontsize=10, fontweight="bold", va="center", ha="right",
