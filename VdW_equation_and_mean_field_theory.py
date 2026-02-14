@@ -67,6 +67,59 @@ def find_roots(beta, pressure):
     return np.array(roots)
 
 
+def find_maxwell_pressure(beta):
+    """Find the Maxwell construction equilibrium pressure via the equal-area rule.
+
+    Returns (P_eq, v_liquid, v_gas) or (None, None, None) if above critical T.
+    """
+    v_dense = np.linspace(v_min, v_max, 5000)
+    P_dense = vdw_pressure(v_dense, beta)
+
+    # Locate spinodal points (local extrema of P(v))
+    dP = np.diff(P_dense)
+    extrema_idx = np.where(np.diff(np.sign(dP)))[0]
+
+    if len(extrema_idx) < 2:
+        return None, None, None
+
+    P_at_extrema = [P_dense[idx + 1] for idx in extrema_idx]
+    P_lo_loop = min(P_at_extrema)
+    P_hi_loop = max(P_at_extrema)
+
+    if P_lo_loop >= P_hi_loop:
+        return None, None, None
+
+    def area_diff(P_try):
+        rts = find_roots(beta, P_try)
+        if len(rts) < 3:
+            return None
+        v1, v3 = rts[0], rts[-1]
+        v_int = np.linspace(v1, v3, 2000)
+        P_int = vdw_pressure(v_int, beta)
+        integrand = P_int - P_try
+        return np.sum(0.5 * (integrand[:-1] + integrand[1:]) * np.diff(v_int))
+
+    # Bisection to find P where equal-area condition holds
+    lo, hi = P_lo_loop + 1e-6, P_hi_loop - 1e-6
+    for _ in range(100):
+        mid = (lo + hi) / 2.0
+        ad = area_diff(mid)
+        if ad is None:
+            break
+        if ad > 0:
+            lo = mid
+        else:
+            hi = mid
+        if abs(hi - lo) < 1e-12:
+            break
+
+    P_eq = (lo + hi) / 2.0
+    roots_eq = find_roots(beta, P_eq)
+    if len(roots_eq) >= 3:
+        return P_eq, roots_eq[0], roots_eq[-1]
+    return None, None, None
+
+
 def classify_roots(roots, beta, pressure):
     """
     Classify each root as 'stable', 'metastable', or 'unstable'.
@@ -242,16 +295,16 @@ def update(_=None):
     P_iso = vdw_pressure(v_plot, beta)
     line_isobar.set_ydata([pressure, pressure])
 
-    # Split isotherm into stable (solid) / unstable+metastable (dashed)
-    if len(roots) >= 3:
-        v1, v3 = roots[0], roots[-1]
-        mask_left = v_plot <= v1
-        mask_mid = (v_plot >= v1) & (v_plot <= v3)
-        mask_right = v_plot >= v3
+    # Split isotherm via Maxwell construction (depends only on beta)
+    P_mw, v_liq, v_gas = find_maxwell_pressure(beta)
+    if P_mw is not None:
+        mask_left = v_plot <= v_liq
+        mask_mid = (v_plot >= v_liq) & (v_plot <= v_gas)
+        mask_right = v_plot >= v_gas
         line_iso_left.set_data(v_plot[mask_left], P_iso[mask_left])
         line_iso_mid.set_data(v_plot[mask_mid], P_iso[mask_mid])
         line_iso_right.set_data(v_plot[mask_right], P_iso[mask_right])
-        line_maxwell.set_data([v1, v3], [pressure, pressure])
+        line_maxwell.set_data([v_liq, v_gas], [P_mw, P_mw])
     else:
         line_iso_left.set_data(v_plot, P_iso)
         line_iso_mid.set_data([], [])
