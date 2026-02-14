@@ -159,7 +159,11 @@ for _ in range(3):
 
 # ── Right panel: VdW isotherm + isobar + dots ──────────────────────────
 P_iso0 = vdw_pressure(v_plot, beta_init)
-line_iso, = ax2.plot(v_plot, P_iso0, color=C_ISOTHERM, lw=2, label="VdW isotherm")
+# Split isotherm into stable (solid) and unstable/metastable (dashed) segments
+line_iso_left, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
+line_iso_mid, = ax2.plot([], [], color=C_ISOTHERM, lw=2, ls='--')
+line_iso_right, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
+line_maxwell, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
 line_isobar = ax2.axhline(p_init, color="#64748b", ls="--", lw=1.2, alpha=0.6)
 
 # Placeholders for up to 3 dots + vlines on the isotherm plot
@@ -236,8 +240,23 @@ def update(_=None):
 
     # ── Right panel: isotherm ───────────────────────────────────────────
     P_iso = vdw_pressure(v_plot, beta)
-    line_iso.set_ydata(P_iso)
     line_isobar.set_ydata([pressure, pressure])
+
+    # Split isotherm into stable (solid) / unstable+metastable (dashed)
+    if len(roots) >= 3:
+        v1, v3 = roots[0], roots[-1]
+        mask_left = v_plot <= v1
+        mask_mid = (v_plot >= v1) & (v_plot <= v3)
+        mask_right = v_plot >= v3
+        line_iso_left.set_data(v_plot[mask_left], P_iso[mask_left])
+        line_iso_mid.set_data(v_plot[mask_mid], P_iso[mask_mid])
+        line_iso_right.set_data(v_plot[mask_right], P_iso[mask_right])
+        line_maxwell.set_data([v1, v3], [pressure, pressure])
+    else:
+        line_iso_left.set_data(v_plot, P_iso)
+        line_iso_mid.set_data([], [])
+        line_iso_right.set_data([], [])
+        line_maxwell.set_data([], [])
 
     # ── Update dots (both panels) ───────────────────────────────────────
     for i in range(3):
