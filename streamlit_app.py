@@ -130,8 +130,6 @@ with st.sidebar:
     pressure = st.slider(r"$P$ (pressure)", min_value=P_lo, max_value=P_hi,
                          value=2.3, step=0.05, key='pressure_slider')
 
-d
-
 # Compute plot data based on current slider values
 v_plot = np.linspace(v_min, v_max, 600)
 G_data = neg_beta_G(v_plot, beta, pressure)
