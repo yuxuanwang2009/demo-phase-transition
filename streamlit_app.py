@@ -193,7 +193,13 @@ else:
     fig.update_yaxes(title_text="β G(v)", type="log", row=1, col=1)
 
 fig.update_xaxes(title_text="v", range=[v_min, v_max], row=2, col=1)
-fig.update_yaxes(title_text="P", range=[P_lo, P_hi], row=2, col=1)
+
+# Dynamic y-range for P plot
+P_min_data, P_max_data = P_data.min(), P_data.max()
+P_range = P_max_data - P_min_data
+P_y_lower = P_min_data - 0.1 * P_range
+P_y_upper = P_max_data + 0.1 * P_range
+fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], row=2, col=1)
 
 # Update layout
 fig.update_layout(
