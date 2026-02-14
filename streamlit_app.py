@@ -194,11 +194,21 @@ else:
 
 fig.update_xaxes(title_text="v", range=[v_min, v_max], row=2, col=1)
 
-# Dynamic y-range for P plot
-P_min_data, P_max_data = P_data.min(), P_data.max()
-P_range = P_max_data - P_min_data
-P_y_lower = P_min_data - 0.1 * P_range
-P_y_upper = P_max_data + 0.1 * P_range
+# Dynamic y-range for P plot centered around current pressure
+# Clamp extreme values and focus on relevant range
+P_clipped = np.clip(P_data, 0, 50)  # Clip extreme values
+P_min_clipped = P_clipped.min()
+P_max_clipped = P_clipped.max()
+
+# Ensure range includes current pressure
+P_y_lower = min(P_min_clipped, pressure * 0.5)
+P_y_upper = max(P_max_clipped, pressure * 1.5)
+
+# Add padding
+P_span = P_y_upper - P_y_lower
+P_y_lower = max(0, P_y_lower - 0.1 * P_span)
+P_y_upper = P_y_upper + 0.1 * P_span
+
 fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], row=2, col=1)
 
 # Update layout
