@@ -227,9 +227,9 @@ if P_maxwell is not None:
     fig.add_trace(go.Scatter(x=v_plot[mask_left], y=P_data[mask_left], mode='lines',
                              line=dict(color=C_ISOTHERM, width=2), showlegend=False),
                   row=2, col=1)
-    # Unphysical + metastable portion (dashed)
+    # Unphysical + metastable portion (dotted)
     fig.add_trace(go.Scatter(x=v_plot[mask_mid], y=P_data[mask_mid], mode='lines',
-                             line=dict(color=C_ISOTHERM, width=2, dash='dash'), showlegend=False),
+                             line=dict(color=C_ISOTHERM, width=2, dash='dot'), showlegend=False),
                   row=2, col=1)
     # Stable portion (gas side)
     fig.add_trace(go.Scatter(x=v_plot[mask_right], y=P_data[mask_right], mode='lines',

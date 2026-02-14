@@ -219,7 +219,7 @@ for _ in range(3):
 P_iso0 = vdw_pressure(v_plot, beta_init)
 # Split isotherm into stable (solid) and unstable/metastable (dashed) segments
 line_iso_left, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
-line_iso_mid, = ax2.plot([], [], color=C_ISOTHERM, lw=2, ls='--')
+line_iso_mid, = ax2.plot([], [], color=C_ISOTHERM, lw=2, ls=':')
 line_iso_right, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
 line_maxwell, = ax2.plot([], [], color=C_ISOTHERM, lw=2)
 line_isobar = ax2.axhline(p_init, color="#64748b", ls="--", lw=1.2, alpha=0.6)
