@@ -324,16 +324,15 @@ fig.update_layout(
     hovermode='closest',
     template='plotly_white',
     annotations=[
-        # Equation for βG plot
+        # Equation for βG plot (first subplot)
         dict(
             x=0.98, y=0.05, xref="x domain", yref="y domain",
             text=r"$\beta G = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$",
             showarrow=False, xanchor="right", yanchor="bottom",
             font=dict(size=10),
-            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4,
-            row=1, col=1
+            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4
         ),
-        # Equation for VdW isotherm plot
+        # Equation for VdW isotherm plot (second subplot)
         dict(
             x=0.98, y=0.05, xref="x2 domain", yref="y2 domain",
             text=r"$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$",
