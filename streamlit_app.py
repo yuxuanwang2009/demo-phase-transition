@@ -259,6 +259,9 @@ with st.expander("📌 Phase Transition", expanded=True):
     - **Rightmost** (large $v$): Gas phase - stable or metastable
 
     The stable phase has the lowest Gibbs free energy $G$.
+    
+    Try adjusting the pressure slider to find where the green dots (stable)
+    and orange dots (metastable) switch!
     """)
 
 with st.expander("⚖️ Maxwell Construction"):
