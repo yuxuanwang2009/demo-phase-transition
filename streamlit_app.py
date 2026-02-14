@@ -181,7 +181,17 @@ for i in range(len(roots)):
 
 # Update axes
 fig.update_xaxes(title_text="v (volume per particle)", range=[v_min, v_max], row=1, col=1)
-fig.update_yaxes(title_text="β G(v)", type="log", row=1, col=1)
+
+# Dynamic y-range for βG plot
+if mask.any():
+    ymin_G, ymax_G = G_data[mask].min(), G_data[mask].max()
+    span = np.log10(ymax_G) - np.log10(max(ymin_G, 1e-30))
+    y_lower = ymin_G * 10 ** (-0.15 * span)
+    y_upper = ymax_G * 10 ** (0.25 * span)
+    fig.update_yaxes(title_text="β G(v)", type="log", range=[np.log10(y_lower), np.log10(y_upper)], row=1, col=1)
+else:
+    fig.update_yaxes(title_text="β G(v)", type="log", row=1, col=1)
+
 fig.update_xaxes(title_text="v", range=[v_min, v_max], row=2, col=1)
 fig.update_yaxes(title_text="P", range=[P_lo, P_hi], row=2, col=1)
 
