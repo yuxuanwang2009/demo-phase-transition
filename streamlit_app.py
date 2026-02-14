@@ -160,10 +160,32 @@ for i in range(len(roots)):
                                            line=dict(color='white', width=2)),
                                  showlegend=False), row=1, col=1)
 
-# Isotherm
-fig.add_trace(go.Scatter(x=v_plot, y=P_data, mode='lines',
-                         line=dict(color=C_ISOTHERM, width=2), showlegend=False),
-              row=2, col=1)
+# Isotherm — split into stable (solid) and unstable/metastable (dashed) segments
+if len(roots) >= 3:
+    v1, v3 = roots[0], roots[-1]
+    mask_left = v_plot <= v1
+    mask_mid = (v_plot >= v1) & (v_plot <= v3)
+    mask_right = v_plot >= v3
+    # Stable portion (left)
+    fig.add_trace(go.Scatter(x=v_plot[mask_left], y=P_data[mask_left], mode='lines',
+                             line=dict(color=C_ISOTHERM, width=2), showlegend=False),
+                  row=2, col=1)
+    # Unstable/metastable portion (dashed)
+    fig.add_trace(go.Scatter(x=v_plot[mask_mid], y=P_data[mask_mid], mode='lines',
+                             line=dict(color=C_ISOTHERM, width=2, dash='dash'), showlegend=False),
+                  row=2, col=1)
+    # Stable portion (right)
+    fig.add_trace(go.Scatter(x=v_plot[mask_right], y=P_data[mask_right], mode='lines',
+                             line=dict(color=C_ISOTHERM, width=2), showlegend=False),
+                  row=2, col=1)
+    # Maxwell construction: horizontal line connecting the two phase boundaries
+    fig.add_trace(go.Scatter(x=[v1, v3], y=[pressure, pressure], mode='lines',
+                             line=dict(color=C_ISOTHERM, width=2), showlegend=False),
+                  row=2, col=1)
+else:
+    fig.add_trace(go.Scatter(x=v_plot, y=P_data, mode='lines',
+                             line=dict(color=C_ISOTHERM, width=2), showlegend=False),
+                  row=2, col=1)
 
 # Isobar
 fig.add_trace(go.Scatter(x=[v_min, v_max], y=[pressure, pressure],
