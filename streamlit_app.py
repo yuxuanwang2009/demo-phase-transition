@@ -178,7 +178,7 @@ for i in range(len(roots)):
                              name=labels[i], showlegend=True), row=2, col=1)
 
 # Update axes
-fig.update_xaxes(title_text="v (volume per particle)", range=[v_min, v_max], row=1, col=1)
+fig.update_xaxes(title_text="v (volume per particle)", range=[v_min, v_max], fixedrange=True, row=1, col=1)
 
 # Dynamic y-range for βG plot
 if mask.any():
@@ -186,11 +186,11 @@ if mask.any():
     span = np.log10(ymax_G) - np.log10(max(ymin_G, 1e-30))
     y_lower = ymin_G * 10 ** (-0.15 * span)
     y_upper = ymax_G * 10 ** (0.25 * span)
-    fig.update_yaxes(title_text="β G(v)", type="log", range=[np.log10(y_lower), np.log10(y_upper)], row=1, col=1)
+    fig.update_yaxes(title_text="β G(v)", type="log", range=[np.log10(y_lower), np.log10(y_upper)], fixedrange=True, row=1, col=1)
 else:
-    fig.update_yaxes(title_text="β G(v)", type="log", row=1, col=1)
+    fig.update_yaxes(title_text="β G(v)", type="log", fixedrange=True, row=1, col=1)
 
-fig.update_xaxes(title_text="v", range=[v_min, v_max], row=2, col=1)
+fig.update_xaxes(title_text="v", range=[v_min, v_max], fixedrange=True, row=2, col=1)
 
 # Dynamic y-range for P plot
 P_min_data = P_data.min()
@@ -209,7 +209,7 @@ P_span = P_y_upper - P_y_lower
 P_y_lower = P_y_lower - 0.05 * P_span
 P_y_upper = P_y_upper + 0.05 * P_span
 
-fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], row=2, col=1)
+fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], fixedrange=True, row=2, col=1)
 
 # Update layout
 fig.update_layout(
