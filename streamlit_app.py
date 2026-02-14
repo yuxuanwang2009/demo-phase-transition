@@ -316,31 +316,32 @@ P_y_upper = P_y_upper + 0.05 * P_span
 
 fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], fixedrange=True, row=2, col=1)
 
+# Add equation annotations
+fig.add_annotation(
+    x=0.5, y=0.98, xref="x domain", yref="y domain",
+    text=r"$\beta G = \beta p v - \dfrac{\beta u}{2v} - \ln(v - b)$",
+    showarrow=False, xanchor="center", yanchor="top",
+    font=dict(size=14),
+    bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=6,
+    row=1, col=1
+)
+
+fig.add_annotation(
+    x=0.5, y=0.98, xref="x2 domain", yref="y2 domain",
+    text=r"$P = \dfrac{1}{\beta(v - b)} - \dfrac{a}{v^2}$",
+    showarrow=False, xanchor="center", yanchor="top",
+    font=dict(size=14),
+    bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=6,
+    row=2, col=1
+)
+
 # Update layout
 fig.update_layout(
     height=900,
     showlegend=True,
     legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5),
     hovermode='closest',
-    template='plotly_white',
-    annotations=[
-        # Equation for βG plot (first subplot)
-        dict(
-            x=0.98, y=0.05, xref="x domain", yref="y domain",
-            text=r"$\beta G = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$",
-            showarrow=False, xanchor="right", yanchor="bottom",
-            font=dict(size=10),
-            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4
-        ),
-        # Equation for VdW isotherm plot (second subplot)
-        dict(
-            x=0.98, y=0.05, xref="x2 domain", yref="y2 domain",
-            text=r"$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$",
-            showarrow=False, xanchor="right", yanchor="bottom",
-            font=dict(size=10),
-            bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=4
-        )
-    ]
+    template='plotly_white'
 )
 
 st.plotly_chart(fig, use_container_width=True, config={
