@@ -10,6 +10,8 @@ ENV/
 *.egg-info/
 dist/
 build/
+.claude/
+.streamlit/
 
 # Jupyter Notebook
 .ipynb_checkpoints
