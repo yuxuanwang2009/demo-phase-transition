@@ -10,6 +10,9 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
+import matplotlib.pyplot as plt
+import io
+import base64
 
 # ── Page config ─────────────────────────────────────────────────────────
 st.set_page_config(
@@ -47,6 +50,31 @@ LABEL_COLOR = {
     "metastable": C_METASTABLE,
     "unstable": C_UNSTABLE,
 }
+
+# ── Helper function to create equation images ───────────────────────────
+def latex_to_base64(latex_string, fontsize=14):
+    """Convert LaTeX string to base64 encoded PNG image with a box."""
+    fig, ax = plt.subplots(figsize=(6, 0.8))
+
+    # Add text with built-in bbox (box around text)
+    ax.text(0.5, 0.5, f'${latex_string}$', fontsize=fontsize,
+            ha='center', va='center', transform=ax.transAxes,
+            bbox=dict(boxstyle='round,pad=0.8',
+                     facecolor='white',
+                     edgecolor='gray',
+                     linewidth=2))
+    ax.axis('off')
+
+    # Save to buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', dpi=150, bbox_inches='tight',
+                transparent=True, pad_inches=0.1)
+    plt.close(fig)
+    buf.seek(0)
+
+    # Convert to base64
+    img_base64 = base64.b64encode(buf.read()).decode()
+    return f"data:image/png;base64,{img_base64}"
 
 # ── Physics helpers ─────────────────────────────────────────────────────
 def neg_beta_G(v, beta, pressure):
@@ -176,16 +204,22 @@ with st.sidebar:
 
     st.markdown("### Controls")
 
+    # Initialize session state for sliders if not already set
+    if 'beta_slider' not in st.session_state:
+        st.session_state.beta_slider = 2.5
+    if 'pressure_slider' not in st.session_state:
+        st.session_state.pressure_slider = 2.3
+
     # Button to set critical point
     if st.button("⚡ Set to Critical Point", use_container_width=True):
         st.session_state.beta_slider = beta_c
         st.session_state.pressure_slider = P_c
 
-    # Sliders with default values
+    # Sliders using session state values
     beta = st.slider(r"$\beta$ (inverse temperature)", min_value=1.5, max_value=4.0,
-                     value=2.5, step=0.01, key='beta_slider')
+                     value=st.session_state.beta_slider, step=0.01, key='beta_slider')
     pressure = st.slider(r"$P$ (pressure)", min_value=P_lo, max_value=P_hi,
-                         value=2.3, step=0.05, key='pressure_slider')
+                         value=st.session_state.pressure_slider, step=0.05, key='pressure_slider')
 
 # Compute plot data based on current slider values
 v_plot = np.linspace(v_min, v_max, 600)
@@ -199,7 +233,7 @@ G_at_roots = neg_beta_G(roots, beta, pressure) if len(roots) > 0 else []
 # Create figure
 fig = make_subplots(
     rows=2, cols=1,
-    subplot_titles=("Free Energy Landscape (log scale)", "VdW Isotherm & Isobar"),
+    subplot_titles=("Free Energy Functional (log scale)", "VdW Isotherm & Isobar"),
     vertical_spacing=0.15,
     row_heights=[0.5, 0.5]
 )
@@ -316,32 +350,37 @@ P_y_upper = P_y_upper + 0.05 * P_span
 
 fig.update_yaxes(title_text="P", range=[P_y_lower, P_y_upper], fixedrange=True, row=2, col=1)
 
-# Add equation annotations
-fig.add_annotation(
-    x=0.5, y=0.98, xref="x domain", yref="y domain",
-    text=r"$\beta G = \beta p v - \dfrac{\beta u}{2v} - \ln(v - b)$",
-    showarrow=False, xanchor="center", yanchor="top",
-    font=dict(size=14),
-    bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=6,
-    row=1, col=1
-)
+# Create equation images
+eq1_img = latex_to_base64(r' G =  P v - {u}/{(2v)} - \ln(v - b)/\beta', fontsize=16)
+eq2_img = latex_to_base64(r'(P + {a}/{v^2}) (v - b) = 1/\beta', fontsize=16)
 
-fig.add_annotation(
-    x=0.5, y=0.98, xref="x2 domain", yref="y2 domain",
-    text=r"$P = \dfrac{1}{\beta(v - b)} - \dfrac{a}{v^2}$",
-    showarrow=False, xanchor="center", yanchor="top",
-    font=dict(size=14),
-    bgcolor="white", bordercolor="lightgray", borderwidth=1, borderpad=6,
-    row=2, col=1
-)
-
-# Update layout
+# Update layout and add equation images
 fig.update_layout(
     height=900,
     showlegend=True,
     legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5),
     hovermode='closest',
-    template='plotly_white'
+    template='plotly_white',
+    images=[
+        # Equation for first subplot (βG) - positioned inside plot at top
+        dict(
+            source=eq1_img,
+            xref="x domain", yref="y domain",
+            x=0.5, y=0.97,
+            sizex=0.9, sizey=0.18,
+            xanchor="center", yanchor="top",
+            layer="above"
+        ),
+        # Equation for second subplot (P) - positioned inside plot at top
+        dict(
+            source=eq2_img,
+            xref="x2 domain", yref="y2 domain",
+            x=0.5, y=0.97,
+            sizex=0.9, sizey=0.18,
+            xanchor="center", yanchor="top",
+            layer="above"
+        )
+    ]
 )
 
 st.plotly_chart(fig, use_container_width=True, config={
@@ -354,7 +393,7 @@ st.plotly_chart(fig, use_container_width=True, config={
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 📊 Top Panel: Free Energy Landscape")
+    st.markdown("### 📊 Top Panel: Free Energy Functional")
     st.markdown(r"""
     Shows $\beta G(v)$ on a logarithmic scale. At fixed $P$ and $\beta$ (inverse temperature),
     the system seeks to minimize $G$.
@@ -380,12 +419,12 @@ st.markdown("### 🔬 Key Physics Insights")
 
 with st.expander("📐 The Equations", expanded=False):
     st.markdown(r"""
-    **Gibbs Free Energy (Mean-Field Theory):**
-    $$\beta G(v) = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$$
+    **Gibbs Free Energy functional (Mean-Field Theory):**
+    $$\beta G(v) = \beta P v - \frac{\beta u}{2v} - \ln(v - b)$$
 
-    This represents the dimensionless Gibbs free energy per particle in the mean-field approximation:
-    - $\beta p v$: External pressure work term
-    - $-\frac{\beta u}{2v}$: Mean-field attractive interaction energy ($u = \Omega U_0/2$)
+    This represents the dimensionless Gibbs free energy functional per particle in the mean-field approximation:
+    - $\beta P v$: External pressure work term
+    - $-\frac{\beta u}{2v}$: Mean-field attractive interaction energy ($u = \Omega U_0$)
     - $-\ln(v - b)$: Entropy of hard-core particles with excluded volume $b = \Omega/2$
 
     The system minimizes $G$ at equilibrium. Multiple local minima indicate **phase coexistence**.
@@ -393,12 +432,12 @@ with st.expander("📐 The Equations", expanded=False):
     **Van der Waals Equation of State:**
     $$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$$
 
-    This follows from $P = -(\partial G/\partial v)_T$ and describes the pressure-volume relationship:
+    This follows from the saddle points of the Gibbs free energy functional and describes the pressure-volume relationship:
     - $\frac{1}{\beta(v - b)}$: Repulsive term from hard-core excluded volume
     - $-\frac{a}{v^2}$: Attractive term from long-range interactions ($a = u/2$)
 
     The non-monotonic behavior (negative $\partial P/\partial v$ region) signals **mechanical instability**
-    and the potential for phase separation.
+    and the potential for phase transition.
     """)
 
 with st.expander("📌 Phase Transition", expanded=True):
