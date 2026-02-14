@@ -1,0 +1,162 @@
+% Actual Lecture: 15
+% Corresponding pages in Lecture Notes.pdf: pp. 71--74
+\chapter{Van der Waals Equation and the Liquid-Gas Phase Transition}
+
+In the previous lecture, we derived the Van der Waals equation using a mean-field approximation that assumes a uniform density $n(\vec{r}) = N/V$. We also identified that this assumption breaks down near phase transitions, where density inhomogeneities become important. When the liquid and gas phases coexist, we would need to consider two ensembles exchanging particles. To systematically address this issue, we need an ensemble in which density fluctuations manifest as \emph{global} fluctuations of the volume, rather than as difficult-to-handle local spatial variations.
+
+One natural approach, following Kardar's book, is to pass to the grand canonical ensemble, where the chemical potential $\mu$ is fixed and the particle number $N$ fluctuates. The density $n = N/V$ then fluctuates globally. The drawback of this route, however, is that $N$ is no longer controlled directly, so we have to analyze it indirectly via $\mu$.
+
+\section{The Isobaric-Isothermal Ensemble}
+
+An alternative approach is to work in the \emph{isobaric-isothermal ensemble} (fixed $T$, $N$, $P$), where the pressure is held fixed and the volume $V$ is allowed to fluctuate:
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[>=Stealth, thick]
+        % === Fixed Volume (left) ===
+        \pgfmathsetseed{42}
+        % Walls with hatching
+
+        \draw[thick] (0,0) rectangle (3,3);
+        % Hatching on all four walls
+        \foreach \i in {0,0.15,...,3} {
+                \draw[thin, gray!50] (\i, 3) -- ++(0.15,0.15);
+                \draw[thin, gray!50] (\i, 0) -- ++(-0.15,-0.15);
+            }
+        \foreach \j in {0,0.15,...,3} {
+                \draw[thin, gray!50] (0, \j) -- ++(-0.15,0.15);
+                \draw[thin, gray!50] (3, \j) -- ++(0.15,-0.15);
+            }
+        % Particles
+        \foreach \i in {1,...,70} {
+                \pgfmathsetmacro{\xp}{0.2 + 2.6*rnd}
+                \pgfmathsetmacro{\yp}{0.2 + 2.6*rnd}
+                \fill[blue!70!black] (\xp, \yp) circle (1.6pt);
+            }
+        \node[font=\small] at (1.5, -0.7) {Fixed $V$};
+        \node[font=\small] at (1.5, 3.5) {Rigid walls};
+
+        % === Fixed Pressure (right) ===
+        \begin{scope}[xshift=6cm]
+            \pgfmathsetseed{17}
+            % Cylinder interior
+
+            % Cylinder walls
+            \draw[thick] (0,0) -- (0,3.5);
+            \draw[thick] (3,0) -- (3,3.5);
+            \draw[thick] (0,0) -- (3,0);
+            % Wall hatching (left, right, bottom only)
+            \foreach \j in {0,0.15,...,3.5} {
+                    \draw[thin, gray!50] (0, \j) -- ++(-0.15,0.15);
+                    \draw[thin, gray!50] (3, \j) -- ++(0.15,-0.15);
+                }
+            \foreach \i in {0,0.15,...,3} {
+                    \draw[thin, gray!50] (\i, 0) -- ++(-0.15,-0.15);
+                }
+
+            % Piston
+            \fill[top color=gray!50, bottom color=gray!20] (0,2.5) rectangle (3,2.75);
+            \draw[thick] (0,2.5) -- (3,2.5);
+            \draw[thick] (0,2.75) -- (3,2.75);
+            % Piston handle
+            \fill[gray!40] (1.35,2.75) rectangle (1.65,3.1);
+            \draw[thick] (1.35,2.75) rectangle (1.65,3.1);
+
+            % Pressure arrows
+            \foreach \xarr in {0.5, 1.5, 2.5} {
+                    \draw[->, thick, red!70!black] (\xarr, 3.7) -- (\xarr, 3.15);
+                }
+            \node[font=\small, red!70!black] at (1.5, 4.0) {$P$};
+
+            % Particles
+            \foreach \i in {1,...,70} {
+                    \pgfmathsetmacro{\xp}{0.2 + 2.6*rnd}
+                    \pgfmathsetmacro{\yp}{0.2 + 2.1*rnd}
+                    \fill[blue!70!black] (\xp, \yp) circle (1.6pt);
+                }
+
+            \node[font=\small] at (1.5, -0.7) {Fixed $P$};
+            \node[font=\small] at (1.5, 4.5) {Movable piston};
+        \end{scope}
+    \end{tikzpicture}
+    \caption{Left: The canonical ensemble with a rigid container of fixed volume $V$. Right: The isobaric-isothermal ensemble, where the system is in contact with a pressure reservoir (external force on a movable piston). The volume $V$ fluctuates, and with it the global density $n = N/V$.}
+\end{figure}
+
+In this ensemble, the partition function is obtained by summing over all possible volumes, weighted by the Boltzmann factor $e^{-\beta P V}$:
+\begin{equation}
+    \mathcal{Z}(T, N, P) = \int_0^\infty dV \, e^{-\beta P V} \, \mathcal{Z}(T, N, V).
+\end{equation}
+Since $V$ fluctuates, so does the density $n = N/V$---but these are \emph{global} fluctuations. The key physical expectation is that when global density fluctuations are small, local density inhomogeneities are also suppressed, thereby justifying the mean-field approximation.
+
+\section{Saddle-Point Evaluation}
+
+Substituting the Van der Waals form of the canonical partition function derived in the previous lecture,
+\begin{equation}
+    \mathcal{Z}(T, N, V) = \frac{(V - N\Omega/2)^N}{N! \lambda^{3N}} \exp\left( \frac{\beta u N^2}{2V} \right),
+\end{equation}
+into the isobaric partition function and changing variables to $v = V/N$ (the volume per particle), we obtain:
+\begin{equation}
+    \mathcal{Z}(T, N, P) = \int dv \, \exp\left[ -\beta N \underbrace{\left( P v - \kB T \ln(v - \Omega/2) - \frac{u}{2v} \right)}_{\equiv \, g(v)} + \text{const} \right].
+\end{equation}
+The quantity $g(v)$ identified in the exponent is precisely the \emph{Gibbs free energy per particle}. For large $N$, the integral is dominated by the configuration that maximizes the integrand, which corresponds to \emph{minimizing} the Gibbs free energy $g(v)$. The saddle-point condition $g'(v^*) = 0$ yields:
+\begin{equation}
+    P - \frac{\kB T}{v^* - \Omega/2} + \frac{u}{2 (v^*)^2} = 0.
+\end{equation}
+Rearranging this condition, we recover the Van der Waals equation of state:
+\begin{equation}
+    \boxed{\left( P + \frac{u}{2 v^2} \right) (v - \Omega/2) = \kB T.}
+\end{equation}
+
+The stability of the system is determined by the shape of $g(v)$. As shown in Fig.~\ref{fig:gibbs}, for temperatures below the critical point, $g(v)$ develops a double-well structure. The two minima correspond to the liquid ($v_\ell$) and gas ($v_g$) phases; at a special pressure---the \emph{transition pressure} $P_{\text{vap}}$---these minima are equal in depth, signaling a first-order phase transition. The local maximum separating the wells corresponds to the unstable region of the Van der Waals isotherm ($\partial P / \partial v > 0$).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{gibbs_functional.png}
+    \caption{Gibbs free energy functional $g(v)$ (per particle) plotted against reduced volume at $T_r = 0.85$ and a pressure slightly above $P_{\text{vap}}$. The two minima correspond to the liquid and gas phases; at generic pressure the minima are at different depths, and the system resides in the global minimum. At the transition pressure ($P = P_{\text{vap}}$), the two minima become equal.}
+    \label{fig:gibbs}
+\end{figure}
+
+The width of the fluctuations in $v$ can be estimated from the Gaussian approximation about the saddle point. Since $g(v)$ appears multiplied by $N$, the fluctuations scale as $\Delta v \sim 1/\sqrt{N}$, and the relative fluctuations $\Delta v / v \sim 1/\sqrt{N} \to 0$ in the thermodynamic limit. This confirms that the mean-field approximation is self-consistent---except when the saddle point becomes flat ($g''(v^*) \to 0$), which signals a phase transition.
+
+\section{First Order Phase Transition}
+
+The Van der Waals equation of state,
+\begin{equation}
+    \boxed{P = \frac{\kB T}{v - b} - \frac{a}{v^2},}
+\end{equation}
+exhibits richer behavior than the ideal gas law. Above a critical temperature $T_c$, the pressure $P(v)$ is a monotonically decreasing function of volume, physically consistent with mechanical stability ($\kappa_T > 0$). However, for $T < T_c$, the isotherms develop a ``wiggle" where the derivative $\pdv{P}{v}$ becomes positive over a range of volumes (see Fig.~\ref{fig:vdw_isotherms}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{vdw_isotherms.png}
+    \caption{Van der Waals isotherms for various reduced temperatures $T_r = T/T_c$. For $T_r < 1$, the isotherms are non-monotonic, indicating an instability.}
+    \label{fig:vdw_isotherms}
+\end{figure}
+
+In the region where $\pdv{P}{v} > 0$, the system is mechanically unstable: a small fluctuation that decreases the volume would decrease the pressure, leading to further compression. This unphysical region signals that the system has undergone a \emph{phase transition}.
+
+Within the isobaric-isothermal ensemble, the phase transition has a clean interpretation in terms of the Gibbs functional $g(v)$ introduced above. As the pressure $P$ is varied at fixed $T < T_c$, the double-well structure of $g(v)$ evolves: one minimum deepens while the other rises. The equilibrium state is always the global minimum of $g$, and the system undergoes a first-order phase transition at the transition pressure $P_{\text{vap}}$ (defined above) where the two minima become exactly equal in depth. Since $G = N\mu$, $g$ is nothing but the chemical potential $\mu$:
+\begin{equation}
+    g(v_\ell) = g(v_g) \quad \Longleftrightarrow \quad \mu(v_\ell) = \mu(v_g).
+\end{equation}
+This condition determines the transition pressure $P_{\text{vap}}$ and the specific volumes $v_\ell$ and $v_g$ at which the system jumps discontinuously between the liquid and gas branches.
+To translate this condition into a practical criterion, we recall the Gibbs-Duhem relation~\eqref{eq:gibbs_duhem}: $S\,dT - V\,dP + N\,d\mu = 0$. At constant temperature ($dT = 0$) and dividing by $N$, this gives $d\mu = v\,dP$. The condition $\mu(v_\ell) = \mu(v_g)$ then implies:
+\begin{equation}
+    0 = \int_{v_\ell}^{v_g} d\mu = \int_{v_\ell}^{v_g} v \, dP.
+\end{equation}
+Integrating by parts, $\int v dP = [Pv] - \int P dv$, or more simply, recalling that the pressure is constant ($P_{\text{vap}}$) along the physical path but varies along the Van der Waals loop:
+\begin{equation}
+    \boxed{0 = P_{\text{vap}}(v_g - v_\ell) - \int_{v_\ell}^{v_g} P_{\text{VdW}}(v) \, dv.}
+\end{equation}
+This is the \emph{Maxwell equal-area construction}: the area of the ``loop'' below the isobar must equal the area of the loop above it, as illustrated in Fig.~\ref{fig:maxwell}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{maxwell_construction.png}
+    \caption{Maxwell equal-area construction for $T_r = 0.85$. The solid curve is the unstable Van der Waals isotherm. Theoretical thermodynamic stability requires replacing the loop with a horizontal line (red dashed) such that the shaded areas are equal. The endpoints $v_\ell$ and $v_g$ correspond to the specific volumes of the coexisting liquid and gas phases.}
+    \label{fig:maxwell}
+\end{figure}
+
+The nature of this instability was foreshadowed by our analysis of the Gibbs free energy in the previous section. The equal-area rule is mathematically equivalent to the requirement that the two phases have equal chemical potential, ensuring that the system resides in the global minimum of $G$.
+
+
