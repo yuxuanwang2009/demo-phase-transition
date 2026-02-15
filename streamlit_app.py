@@ -36,7 +36,7 @@ P_c = a / (27 * b**2)
 
 # ── Plotting ranges ─────────────────────────────────────────────────────
 v_min = b + 1e-6
-v_max = 0.4
+v_max = .5
 P_lo, P_hi = 0.2, 10.0
 
 # ── Colors ──────────────────────────────────────────────────────────────
@@ -186,6 +186,43 @@ def classify_roots(roots, beta, pressure):
 
     return labels
 
+def find_beta_for_maxwell_pressure(target_P, beta_min=None, beta_max=4.0, tol=1e-6):
+    """Find β such that find_maxwell_pressure(β) = target_P using bisection."""
+    # Use critical point as lower bound if not specified (phase coexistence only exists for β ≥ β_c)
+    if beta_min is None:
+        beta_min = beta_c + 0.001  # Slightly above critical point
+
+    # Check if target_P is achievable
+    P_mw_min, _, _ = find_maxwell_pressure(beta_min)
+    P_mw_max, _, _ = find_maxwell_pressure(beta_max)
+
+    if P_mw_min is None or P_mw_max is None:
+        return None
+
+    if target_P < min(P_mw_min, P_mw_max) or target_P > max(P_mw_min, P_mw_max):
+        return None
+
+    # Bisection search
+    for _ in range(100):
+        beta_mid = (beta_min + beta_max) / 2.0
+        P_mw, _, _ = find_maxwell_pressure(beta_mid)
+
+        if P_mw is None:
+            return None
+
+        if abs(P_mw - target_P) < tol:
+            return beta_mid
+
+        if P_mw > target_P:
+            beta_min = beta_mid
+        else:
+            beta_max = beta_mid
+
+        if abs(beta_max - beta_min) < 1e-8:
+            break
+
+    return (beta_min + beta_max) / 2.0
+
 # ── Streamlit App ───────────────────────────────────────────────────────
 
 st.title("⚛️ Van der Waals Equation & Mean-Field Theory")
@@ -205,24 +242,121 @@ with st.sidebar:
     st.markdown("### Controls")
 
     # Initialize session state for sliders if not already set
-    if 'beta_slider' not in st.session_state:
-        st.session_state.beta_slider = 2.5
-    if 'pressure_slider' not in st.session_state:
-        st.session_state.pressure_slider = 2.3
+    if 'beta_val' not in st.session_state:
+        st.session_state.beta_val = 2.5
+    if 'pressure_val' not in st.session_state:
+        st.session_state.pressure_val = 2.3
+    if 'prev_beta' not in st.session_state:
+        st.session_state.prev_beta = 2.5
+    if 'prev_pressure' not in st.session_state:
+        st.session_state.prev_pressure = 2.3
+    if 'lock_active' not in st.session_state:
+        st.session_state.lock_active = False
+    if 'slider_key' not in st.session_state:
+        st.session_state.slider_key = 0
 
     # Button to set critical point
     if st.button("⚡ Set to Critical Point", use_container_width=True):
-        st.session_state.beta_slider = beta_c
-        st.session_state.pressure_slider = P_c
+        st.session_state.beta_val = beta_c
+        st.session_state.pressure_val = P_c
+        st.session_state.prev_beta = beta_c
+        st.session_state.prev_pressure = P_c
+        st.session_state.slider_key += 1  # Force slider refresh
+        st.rerun()
 
-    # Sliders using session state values
+    # Sliders using session state values with unique keys to force refresh
     beta = st.slider(r"$\beta$ (inverse temperature)", min_value=1.5, max_value=4.0,
-                     value=st.session_state.beta_slider, step=0.01, key='beta_slider')
+                     value=st.session_state.beta_val, step=0.01,
+                     key=f"beta_{st.session_state.slider_key}")
     pressure = st.slider(r"$P$ (pressure)", min_value=P_lo, max_value=P_hi,
-                         value=st.session_state.pressure_slider, step=0.05, key='pressure_slider')
+                         value=st.session_state.pressure_val, step=0.05,
+                         key=f"pressure_{st.session_state.slider_key}")
 
-# Compute plot data based on current slider values
-v_plot = np.linspace(v_min, v_max, 600)
+    # Checkbox for locking to coexistence line (placed at bottom)
+    lock_coexistence = st.checkbox(
+        r"Lock $P$ and $\beta$ onto phase coexistence line",
+        value=st.session_state.lock_active,
+        help="When checked, moving either slider adjusts the other to maintain Maxwell construction"
+    )
+
+    # Track if lock state changed
+    if lock_coexistence != st.session_state.lock_active:
+        st.session_state.lock_active = lock_coexistence
+        # When activating lock, snap to nearest coexistence line point
+        if lock_coexistence:
+            P_mw, _, _ = find_maxwell_pressure(st.session_state.beta_val)
+            if P_mw is not None and P_lo <= P_mw <= P_hi:
+                # Round to slider step to avoid floating point mismatch
+                P_mw_rounded = round(P_mw / 0.05) * 0.05
+                st.session_state.pressure_val = P_mw_rounded
+                st.session_state.prev_pressure = P_mw_rounded
+                st.session_state.slider_key += 1  # Force slider refresh
+            st.rerun()
+
+    # Detect changes and handle locking
+    beta_changed = abs(beta - st.session_state.prev_beta) > 1e-9
+    pressure_changed = abs(pressure - st.session_state.prev_pressure) > 1e-9
+
+    if lock_coexistence and (beta_changed or pressure_changed):
+        if beta_changed:
+            # β slider was moved, update P to Maxwell pressure
+            P_mw, _, _ = find_maxwell_pressure(beta)
+            if P_mw is not None and P_lo <= P_mw <= P_hi:
+                # Round to slider step to avoid floating point mismatch
+                P_mw_rounded = round(P_mw / 0.05) * 0.05
+                st.session_state.beta_val = beta
+                st.session_state.pressure_val = P_mw_rounded
+                st.session_state.prev_beta = beta
+                st.session_state.prev_pressure = P_mw_rounded
+                st.session_state.slider_key += 1  # Force slider refresh
+                st.rerun()
+        else:  # pressure_changed
+            # P slider was moved, find β for this Maxwell pressure
+            beta_new = find_beta_for_maxwell_pressure(pressure)
+            if beta_new is not None:
+                # Round to slider step to avoid floating point mismatch
+                beta_new_rounded = round(beta_new / 0.01) * 0.01
+                st.session_state.beta_val = beta_new_rounded
+                st.session_state.pressure_val = pressure
+                st.session_state.prev_beta = beta_new_rounded
+                st.session_state.prev_pressure = pressure
+                st.session_state.slider_key += 1  # Force slider refresh
+                st.rerun()
+            else:
+                # P is outside coexistence region, clamp to nearest valid value
+                P_max_mw, _, _ = find_maxwell_pressure(beta_c + 0.001)  # at minimum β
+                P_min_mw, _, _ = find_maxwell_pressure(4.0)  # at maximum β
+
+                if P_max_mw is not None and pressure > P_max_mw:
+                    # P is too high (above critical point), clamp to P_c
+                    P_clamped = round(P_max_mw / 0.05) * 0.05
+                    beta_clamped = beta_c + 0.001
+                    st.session_state.beta_val = beta_clamped
+                    st.session_state.pressure_val = P_clamped
+                    st.session_state.prev_beta = beta_clamped
+                    st.session_state.prev_pressure = P_clamped
+                    st.session_state.slider_key += 1
+                    st.rerun()
+                elif P_min_mw is not None and pressure < P_min_mw:
+                    # P is too low, clamp to minimum Maxwell pressure
+                    P_clamped = round(P_min_mw / 0.05) * 0.05
+                    beta_clamped = 4.0
+                    st.session_state.beta_val = beta_clamped
+                    st.session_state.pressure_val = P_clamped
+                    st.session_state.prev_beta = beta_clamped
+                    st.session_state.prev_pressure = P_clamped
+                    st.session_state.slider_key += 1
+                    st.rerun()
+
+    # Update stored values only if not locked or no change
+    if not lock_coexistence or (not beta_changed and not pressure_changed):
+        st.session_state.beta_val = beta
+        st.session_state.pressure_val = pressure
+        st.session_state.prev_beta = beta
+        st.session_state.prev_pressure = pressure
+
+# Compute plot data based on current slider values (log spacing for smooth log-scale plot)
+v_plot = np.logspace(np.log10(v_min), np.log10(v_max), 600)
 G_data = neg_beta_G(v_plot, beta, pressure)
 P_data = vdw_pressure(v_plot, beta)
 P_maxwell, v_liq, v_gas = find_maxwell_pressure(beta)
@@ -317,19 +451,27 @@ for i in range(len(roots)):
                              name=labels[i], showlegend=True), row=2, col=1)
 
 # Update axes
-fig.update_xaxes(title_text="v (volume per particle)", range=[v_min, v_max], fixedrange=True, row=1, col=1)
+fig.update_xaxes(title_text="v (volume per particle)", type="log",
+                 range=[np.log10(v_min), np.log10(v_max)], fixedrange=True,
+                 tickvals=[0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
+                 ticktext=['0.01', '0.02', '0.05', '0.1', '0.2', '0.5', '1'],
+                 row=1, col=1)
 
-# Dynamic y-range for βG plot
+# Dynamic y-range for βG plot with capped upper limit
 if mask.any():
     ymin_G, ymax_G = G_data[mask].min(), G_data[mask].max()
     span = np.log10(ymax_G) - np.log10(max(ymin_G, 1e-30))
     y_lower = ymin_G * 10 ** (-0.15 * span)
-    y_upper = ymax_G * 10 ** (0.25 * span)
+    y_upper = min(ymax_G * 10 ** (0.08 * span), 4.0)  # Cap upper limit at 4.0
     fig.update_yaxes(title_text="β G(v)", type="log", range=[np.log10(y_lower), np.log10(y_upper)], fixedrange=True, row=1, col=1)
 else:
     fig.update_yaxes(title_text="β G(v)", type="log", fixedrange=True, row=1, col=1)
 
-fig.update_xaxes(title_text="v", range=[v_min, v_max], fixedrange=True, row=2, col=1)
+fig.update_xaxes(title_text="v", type="log",
+                 range=[np.log10(v_min), np.log10(v_max)], fixedrange=True,
+                 tickvals=[0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.0],
+                 ticktext=['0.01', '0.02', '0.05', '0.1', '0.2', '0.5', '1'],
+                 row=2, col=1)
 
 # Dynamic y-range for P plot
 P_min_data = P_data.min()
@@ -471,7 +613,11 @@ with st.expander("🌡️ Critical Point"):
     At the **critical point** ($\beta_c = {beta_c:.3f}$, $P_c = {P_c:.3f}$), the distinction
     between liquid and gas vanishes - they become a single **supercritical fluid**.
 
-    Click the "Set to Critical Point" button above to jump to these values! Slide around these values to see fluid turning into gas via a **second-order phase transition.**.
+    Click the "Set to Critical Point" button above to jump to these values!
+
+    Slide around these values to see fluid turning into gas smoothly via a **second-order phase transition**.
+
+    Alternatively, check the "Lock to coexistence line" checkbox to explore a **Mexican-hat** like free energy functional.
     """)
 
 # Footer

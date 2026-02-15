@@ -14,7 +14,8 @@ Stability classification (color-coded on both panels):
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.ticker import LogLocator, FuncFormatter
 
 # ── Model parameters ────────────────────────────────────────────────────
 Omega = 0.02        # hard-core volume  (Ω)
@@ -25,11 +26,11 @@ b = Omega / 2.0     # VdW excluded volume
 
 # ── Plotting ranges ─────────────────────────────────────────────────────
 v_min = b + 1e-6
-v_max = 0.4
+v_max = 1.0
 P_lo, P_hi = 0.2, 10.0
 
-v_fine = np.linspace(v_min, v_max, 4000)   # fine grid for root finding
-v_plot = np.linspace(v_min, v_max, 600)    # plotting grid
+v_fine = np.linspace(v_min, v_max, 4000)   # fine grid for root finding (linear for bisection)
+v_plot = np.logspace(np.log10(v_min), np.log10(v_max), 600)  # plotting grid (log spacing for smooth log-scale plot)
 
 # ── Colors ──────────────────────────────────────────────────────────────
 C_STABLE    = "#16a34a"   # green
@@ -186,6 +187,10 @@ line_G, = ax1.semilogy(v_plot[mask0], y0[mask0], color=C_ISOTHERM, lw=2)
 ax1.set_xlabel("v  (volume per particle)", fontsize=11)
 ax1.set_ylabel(r"$\beta\, G(v)$", fontsize=12)
 ax1.set_xlim(v_min, v_max)
+ax1.set_xscale('log')
+ax1.xaxis.set_major_locator(LogLocator(base=10, subs=[1.0, 2.0, 5.0], numticks=10))
+ax1.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)*0.1, numticks=20))
+ax1.xaxis.set_major_formatter(FuncFormatter(lambda x, p: f'{x:.2g}'))
 ax1.set_title("Free-energy landscape (log scale)", fontsize=11)
 # Add equation label
 ax1.text(0.98, 0.05, r"$\beta G = \beta p v - \frac{\beta u}{2v} - \ln(v - b)$",
@@ -255,6 +260,10 @@ ax2.set_xlabel("v", fontsize=11)
 ax2.set_ylabel("P", fontsize=11)
 ax2.set_xlim(v_min, v_max)
 ax2.set_ylim(P_lo, P_hi)
+ax2.set_xscale('log')
+ax2.xaxis.set_major_locator(LogLocator(base=10, subs=[1.0, 2.0, 5.0], numticks=10))
+ax2.xaxis.set_minor_locator(LogLocator(base=10, subs=np.arange(2, 10)*0.1, numticks=20))
+ax2.xaxis.set_major_formatter(FuncFormatter(lambda x, p: f'{x:.2g}'))
 ax2.set_title("VdW isotherm  &  isobar", fontsize=11)
 # Add equation label
 ax2.text(0.98, 0.05, r"$P = \frac{1}{\beta(v - b)} - \frac{a}{v^2}$",
@@ -268,19 +277,84 @@ text_beta_right = ax2.text(0.02, 0.98, rf"$\beta$ = {beta_init:.2f}", transform=
                            fontsize=11, fontweight="bold", va="top", ha="left",
                            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.85))
 
-# ── Sliders ─────────────────────────────────────────────────────────────
+# ── Sliders & Checkbox ─────────────────────────────────────────────────
 ax_beta = fig.add_axes([0.20, 0.10, 0.60, 0.03])
 ax_pres = fig.add_axes([0.20, 0.04, 0.60, 0.03])
+ax_check = fig.add_axes([0.20, 0.15, 0.30, 0.04])
 
 slider_beta = Slider(ax_beta, r"$\beta$", 1.5, 4.0,
                      valinit=beta_init, valstep=0.01, color="#6366f1")
 slider_pres = Slider(ax_pres, r"$P$", P_lo, P_hi,
                      valinit=p_init, valstep=0.05, color="#94a3b8")
+check = CheckButtons(ax_check, ["Lock to coexistence line"], [False])
 
+
+def find_beta_for_maxwell_pressure(target_P, beta_min=1.5, beta_max=4.0, tol=1e-6):
+    """Find β such that find_maxwell_pressure(β) = target_P using bisection."""
+    # Check if target_P is achievable
+    P_mw_min, _, _ = find_maxwell_pressure(beta_min)
+    P_mw_max, _, _ = find_maxwell_pressure(beta_max)
+
+    if P_mw_min is None or P_mw_max is None:
+        return None
+
+    if target_P < min(P_mw_min, P_mw_max) or target_P > max(P_mw_min, P_mw_max):
+        return None
+
+    # Bisection search
+    for _ in range(100):
+        beta_mid = (beta_min + beta_max) / 2.0
+        P_mw, _, _ = find_maxwell_pressure(beta_mid)
+
+        if P_mw is None:
+            return None
+
+        if abs(P_mw - target_P) < tol:
+            return beta_mid
+
+        if P_mw > target_P:
+            beta_min = beta_mid
+        else:
+            beta_max = beta_mid
+
+        if abs(beta_max - beta_min) < 1e-8:
+            break
+
+    return (beta_min + beta_max) / 2.0
+
+
+# Track previous slider values to detect which one changed
+prev_beta = beta_init
+prev_pressure = p_init
 
 def update(_=None):
+    global prev_beta, prev_pressure
+
     beta = slider_beta.val
     pressure = slider_pres.val
+
+    # If checkbox is active, lock to coexistence line
+    if check.get_status()[0]:
+        # Determine which slider changed
+        beta_changed = abs(beta - prev_beta) > 1e-9
+        pressure_changed = abs(pressure - prev_pressure) > 1e-9
+
+        if beta_changed and not pressure_changed:
+            # β slider was moved, update P to Maxwell pressure
+            P_mw, _, _ = find_maxwell_pressure(beta)
+            if P_mw is not None:
+                pressure = P_mw
+                slider_pres.set_val(pressure)
+        elif pressure_changed and not beta_changed:
+            # P slider was moved, find β for this Maxwell pressure
+            beta_new = find_beta_for_maxwell_pressure(pressure)
+            if beta_new is not None:
+                beta = beta_new
+                slider_beta.set_val(beta)
+
+    # Update previous values
+    prev_beta = beta
+    prev_pressure = pressure
 
     # Update text labels
     text_P_left.set_text(f"P = {pressure:.2f}")
@@ -381,6 +455,7 @@ def update(_=None):
 
 slider_beta.on_changed(update)
 slider_pres.on_changed(update)
+check.on_clicked(lambda _: update())
 
 # Draw initial state
 update()
