@@ -180,9 +180,18 @@ def classify_roots(roots, beta, pressure):
     if len(candidates) == 1:
         labels[candidates[0][0]] = "stable"
     elif len(candidates) >= 2:
-        best_idx = min(candidates, key=lambda x: x[1])[0]
-        for i, _ in candidates:
-            labels[i] = "stable" if i == best_idx else "metastable"
+        # Find minimum G value
+        min_G = min(G_vals[i] for i, _ in candidates)
+
+        # Tolerance for considering two states as having equal free energy
+        G_tolerance = 0.02
+
+        # Mark all candidates within tolerance of minimum as stable
+        for i, G_i in candidates:
+            if abs(G_i - min_G) < G_tolerance:
+                labels[i] = "stable"
+            else:
+                labels[i] = "metastable"
 
     return labels
 
@@ -274,7 +283,7 @@ with st.sidebar:
 
     # Checkbox for locking to coexistence line (placed at bottom)
     lock_coexistence = st.checkbox(
-        r"Lock $P$ and $\beta$ onto phase coexistence line",
+        r"Lock $P$ and $\beta$ onto phase coexistence line (when avaiable)",
         value=st.session_state.lock_active,
         help="When checked, moving either slider adjusts the other to maintain Maxwell construction"
     )
@@ -322,31 +331,6 @@ with st.sidebar:
                 st.session_state.prev_pressure = pressure
                 st.session_state.slider_key += 1  # Force slider refresh
                 st.rerun()
-            else:
-                # P is outside coexistence region, clamp to nearest valid value
-                P_max_mw, _, _ = find_maxwell_pressure(beta_c + 0.001)  # at minimum β
-                P_min_mw, _, _ = find_maxwell_pressure(4.0)  # at maximum β
-
-                if P_max_mw is not None and pressure > P_max_mw:
-                    # P is too high (above critical point), clamp to P_c
-                    P_clamped = round(P_max_mw / 0.05) * 0.05
-                    beta_clamped = beta_c + 0.001
-                    st.session_state.beta_val = beta_clamped
-                    st.session_state.pressure_val = P_clamped
-                    st.session_state.prev_beta = beta_clamped
-                    st.session_state.prev_pressure = P_clamped
-                    st.session_state.slider_key += 1
-                    st.rerun()
-                elif P_min_mw is not None and pressure < P_min_mw:
-                    # P is too low, clamp to minimum Maxwell pressure
-                    P_clamped = round(P_min_mw / 0.05) * 0.05
-                    beta_clamped = 4.0
-                    st.session_state.beta_val = beta_clamped
-                    st.session_state.pressure_val = P_clamped
-                    st.session_state.prev_beta = beta_clamped
-                    st.session_state.prev_pressure = P_clamped
-                    st.session_state.slider_key += 1
-                    st.rerun()
 
     # Update stored values only if not locked or no change
     if not lock_coexistence or (not beta_changed and not pressure_changed):
@@ -626,7 +610,8 @@ st.markdown("""
 <div style='text-align: center; color: #64748b; padding: 20px;'>
     <small>
     Interactive visualization for PHY 6536 • Van der Waals Equation & Mean-Field Theory<br>
-    Built with Streamlit & Plotly
+    Built with Streamlit & Plotly<br><br>
+    © 2026 Yuxuan Wang. All rights reserved.
     </small>
 </div>
 """, unsafe_allow_html=True)
